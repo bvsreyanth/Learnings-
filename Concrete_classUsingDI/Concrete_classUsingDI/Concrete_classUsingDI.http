@@ -1,0 +1,6 @@
+@Concrete_classUsingDI_HostAddress = http://localhost:5283
+
+GET {{Concrete_classUsingDI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
