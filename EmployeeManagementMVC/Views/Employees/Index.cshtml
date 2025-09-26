@@ -1,0 +1,261 @@
+﻿@model List<EmployeeManagementMVC.Models.Employee>
+
+@{
+    ViewBag.Title = "Employees List";
+    var totalSalary = Model.Sum(e => e.Salary);
+}
+
+<h2>Employees List</h2>
+
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">Create New Employee</button>
+
+<div style="margin-top: 40px;">
+    <table class="table" id="employeeTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Designation</th>
+                <th>Date of Joining</th>
+                <th>Salary</th>
+                <th>Gender</th>
+                <th>State</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var employee in Model)
+            {
+                <tr>
+                    <td>@employee.Name</td>
+                    <td>@employee.Designation</td>
+                    <td>@employee.DOJ.ToShortDateString()</td>
+                    <td class="salary">@employee.Salary</td>
+                    <td>@employee.Gender</td>
+                    <td>@employee.State</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-warning">Edit</a>
+                        <a href="#" class="btn btn-danger deleteButton" data-id="@employee.Id">Delete</a>
+                    </td>
+                </tr>
+            }
+            <tr id="totalRow">
+                <td colspan="3" style="text-align: right;"><strong>Total Salary:</strong></td>
+                <td colspan="4" id="totalSalary">@totalSalary</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<!-- Create Employee Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createModalLabel">Create New Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group mb-3">
+                        <label for="Name">Name <span style="color: red;">*</span></label>
+                        <input type="text" id="Name" class="form-control" required />
+                        <span class="text-danger" id="NameError"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="Designation">Designation <span style="color: red;">*</span></label>
+                        <input type="text" id="Designation" class="form-control" required />
+                        <span class="text-danger" id="DesignationError"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="DOJ">Date of Joining <span style="color: red;">*</span></label>
+                        <input type="date" id="DOJ" class="form-control" required />
+                        <span class="text-danger" id="DOJError"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="Salary">Salary <span style="color: red;">*</span></label>
+                        <input type="number" id="Salary" class="form-control" required />
+                        <span class="text-danger" id="SalaryError"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="Gender">Gender <span style="color: red;">*</span></label>
+                        <select id="Gender" class="form-control" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                        <span class="text-danger" id="GenderError"></span>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="State">State <span style="color: red;">*</span></label>
+                        <input type="text" id="State" class="form-control" required />
+                        <span class="text-danger" id="StateError"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveEmployee">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const saveEmployeeButton = document.getElementById("saveEmployee");
+
+          saveEmployeeButton.addEventListener("click", async function () {
+        // Clear previous error messages
+        document.getElementById("NameError").textContent = "";
+        document.getElementById("DesignationError").textContent = "";
+        document.getElementById("DOJError").textContent = "";
+        document.getElementById("SalaryError").textContent = "";
+        document.getElementById("GenderError").textContent = "";
+        document.getElementById("StateError").textContent = "";
+
+        // Validate fields
+        const name = document.getElementById("Name").value.trim();
+        const designation = document.getElementById("Designation").value.trim();
+        const doj = document.getElementById("DOJ").value.trim();
+        const salary = parseFloat(document.getElementById("Salary").value.trim());
+        const gender = document.getElementById("Gender").value.trim();
+        const state = document.getElementById("State").value.trim();
+
+        let isValid = true;
+
+        if (!name) {
+            document.getElementById("NameError").textContent = "Name is required.";
+            isValid = false;
+        }
+        if (!designation) {
+            document.getElementById("DesignationError").textContent = "Designation is required.";
+            isValid = false;
+        }
+        if (!doj) {
+            document.getElementById("DOJError").textContent = "Date of Joining is required.";
+            isValid = false;
+        }
+        if (!salary || salary <= 0) {
+            document.getElementById("SalaryError").textContent = "Valid salary is required.";
+            isValid = false;
+        }
+        if (!gender) {
+            document.getElementById("GenderError").textContent = "Gender is required.";
+            isValid = false;
+        }
+        if (!state) {
+            document.getElementById("StateError").textContent = "State is required.";
+            isValid = false;
+        }
+
+        if (!isValid) {
+            // Stop form submission if validation fails
+            return;
+        }
+
+        // Prepare employee data
+        const employee = {
+            Name: name,
+            Designation: designation,
+            DOJ: doj,
+            Salary: salary,
+            Gender: gender,
+            State: state,
+        };
+
+            try {
+                const response = await fetch('@Url.Action("Create", "Employees")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                    },
+                    body: JSON.stringify(employee),
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    // Add the new employee to the table
+                    const tableBody = document.querySelector("#employeeTable tbody");
+                    const newRow = document.createElement("tr");
+                    newRow.innerHTML = `
+                        <td>${result.name}</td>
+                        <td>${result.designation}</td>
+                        <td>${new Date(result.doj).toLocaleDateString()}</td>
+                        <td class="salary">${result.salary}</td>
+                        <td>${result.gender}</td>
+                        <td>${result.state}</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="${result.id}" class="btn btn-warning">Edit</a>
+                            <a href="#" class="btn btn-danger deleteButton" data-id="${result.id}">Delete</a>
+                        </td>
+                    `;
+                    tableBody.insertBefore(newRow, document.getElementById("totalRow"));
+
+                    // Update the total salary
+                    const totalSalaryElement = document.getElementById("totalSalary");
+                    const currentTotal = parseFloat(totalSalaryElement.textContent);
+                    totalSalaryElement.textContent = (currentTotal + result.salary).toFixed(2);
+
+                    // Close the modal
+                    const createModal = bootstrap.Modal.getInstance(document.getElementById("createModal"));
+                    createModal.hide();
+
+                    // Reset the form
+                    document.getElementById("createForm").reset();
+                } else {
+                    const error = await response.text();
+                    alert("Error creating employee: " + error);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while creating the employee.");
+            }
+        });
+    });
+
+        document.querySelectorAll('.deleteButton').forEach(button => {
+        button.addEventListener('click', async function () {
+            const id = this.dataset.id;
+
+            if (!confirm("Are you sure you want to delete this employee?")) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/Employees/Delete/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                    }
+                });
+
+                if (response.ok) {
+                    // Remove the row from the table
+                    const row = this.closest('tr');
+                    if (row) {
+                        row.remove();
+                    }
+
+                    // Update total salary
+                    const salary = parseFloat(row.children[3].innerText);
+                    const totalSalaryElement = document.getElementById("totalSalary");
+                    const currentTotal = parseFloat(totalSalaryElement.textContent);
+                    totalSalaryElement.textContent = (currentTotal - salary).toFixed(2);
+
+                    alert("Employee deleted successfully.");
+                } else {
+                    const error = await response.text();
+                    alert("Error deleting employee: " + error);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while deleting the employee.");
+            }
+        });
+    });
+
+</script>
